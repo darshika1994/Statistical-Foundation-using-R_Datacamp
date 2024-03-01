@@ -1,0 +1,371 @@
+---
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+Loading Lib
+
+```{r}
+library(ggplot2)
+library(dplyr)
+```
+
+Loading msleep data from ggplot package
+
+```{r}
+data(msleep)
+head(msleep, 5)
+```
+
+# MEASURE CENTRAL TENDENCY -\>
+
+## mean
+
+```{r}
+mean(msleep$sleep_total)
+```
+
+## median
+
+```{r}
+median(msleep$sleep_total)
+```
+
+## mode
+
+```{r}
+msleep %>% 
+  count(sleep_total, sort = TRUE) %>% head()
+```
+
+12.5 has occurred 4 times. so, 4 is the mode
+
+Now that we have lots of ways to measure center, how do we know which
+one to use? Let's look at an example. Here, we have all of the
+insectivores in the dataset.
+
+-   Step 1 : Filter out vore == "insecti" & store in a object called
+    msleep_insecti
+-   Step 2 : Then check mean and median of sleep_total column from
+    msleep_insecti
+-   Step 2 : Remove out the row from msleep_insecti which have the least
+    sleep_total value and then again check the mean and median of
+    msleep_insecti
+
+***You will notice that just by removing few rows from msleep based on
+least sleep_total value, the mean has shifted drastically whereas, the
+median have not.***
+
+```{r}
+msleep_insecti <- msleep %>% 
+  filter(vore == "insecti")
+
+msleep_insecti
+```
+
+```{r}
+msleep_insecti %>% 
+  ggplot(aes(sleep_total)) +
+  geom_histogram(bins = 15)
+```
+
+```{r}
+msleep_insecti %>% 
+  summarise(mean_sleep = mean(sleep_total), median_sleep = median(sleep_total))
+```
+
+```{r}
+msleep_insecti %>% 
+  filter(sleep_total >= 9) %>% 
+  summarise(mean_sleep = mean(sleep_total), median_sleep = median(sleep_total))
+```
+
+-   Mean shifted from 14.94 to 19.2333
+-   Median shifted from 18.1 to 19.7 Because mean is more sensitive to
+    extreme values than median so it works better for symmetrical data
+    like this. However, if the data is skewed, meaning it's not
+    symmetrical, like this, median is usually better to use.
+
+When data is skewed, the mean and median are different. The mean is
+pulled in the direction of the skew, so it's lower than the median on
+the left-skewed data, and higher than the median on the right-skewed
+data. Because the mean is pulled around by the extreme values, it's
+better to use the median since it's less affected by outliers.
+
+# MEASURE OF SPREAD -\>
+
+Spread is just what it sounds like - it describes how spread apart or
+close together the data points are. Just like measures of center, there
+are a few different measures of spread.
+
+## 1.  Variance -
+
+    Variance, measures the average distance from each data point to the
+    data's mean.
+
+calculating variance - step 1. We start by calculating the distance
+between each point and the mean, so we get one number for every data
+point.
+
+```{r}
+dists <- msleep$sleep_total - mean(msleep$sleep_total)
+dists
+```
+
+step 2. We then square each distance and then add them all together.
+
+```{r}
+squared_dist <- (dists)^2
+```
+
+```{r}
+sum_squared_dist <- sum(squared_dist)
+sum_squared_dist
+```
+
+step 3. Finally, we divide the sum of squared distances by the number of
+data points minus 1, giving us the variance.
+
+```{r}
+sum_squared_dist/nrow(msleep) - 1
+```
+
+The higher the variance, the more spread out the data is. It's important
+to note that the units of variance are squared, so in this case, it's
+19.8 hours squared. We can calculate the variance in one step using the
+var function.
+
+```{r}
+var(msleep$sleep_total)
+```
+
+## 2.  Standard deviation -
+
+    The standard deviation is another measure of spread, calculated by
+    taking the square root of the variance
+
+```{r}
+sqrt(var(msleep$sleep_total))
+```
+
+```{r}
+sd(msleep$sleep_total)
+```
+
+The nice thing about standard deviation is that the units are usually
+easier to understand since they're not squared.
+
+## 3.  Mean absolute deviation -
+
+    Mean absolute deviation takes the absolute value of the distances to
+    the mean, and then takes the mean of those differences
+
+```{r}
+dist <- msleep$sleep_total - mean(msleep$sleep_total) # many data points (this is dist to the mean)
+mean(abs(dist))
+```
+
+While this is similar to standard deviation, it's not exactly the same.
+Standard deviation squares distances, so longer distances are penalized
+more than shorter ones, while mean absolute deviation penalizes each
+distance equally. One isn't better than the other, but SD is more common
+than MAD.
+
+## Quartiles -
+
+Quartiles split up the data into four equal parts. Here, we call the
+quantile function to get the quartiles of the data.This means that the
+second quartile splits the data in two, with 50% of the data below it
+and 50% of the data above it, so it's exactly the same as the median.
+
+```{r}
+quantile(msleep$sleep_total)
+```
+
+This means that 25% of the data is between 1.9 and 7.85, another 25% is
+between 7.85 and 10.10, and so on.
+
+```{r}
+min(msleep$sleep_total)
+max(msleep$sleep_total)
+```
+
+## Boxplot using quartiles -
+
+```{r}
+ggplot(msleep,aes(y=sleep_total)) +
+  geom_boxplot()
+```
+
+The boxes in box plots represent quartiles. The bottom of the box is the
+first quartile, and the top of the box is the third quartile. The middle
+line is the second quartile, or the median.
+
+## Quantiles -
+
+Quantiles, also called percentiles, are a generalized version of
+quartile, so they can split data into 5 pieces or ten pieces, for
+example. By default, the quantile function returns the quartiles of the
+data, but we can adjust this using the probs argument, which takes in a
+vector of proportions. Here, we split the data in five equal pieces. We
+can also use the seq function as a shortcut, which takes in the lowest
+number, the highest number, and the number we want to jump by. We can
+compute the same quantiles using seq from zero to one, jumping by 0-.2.
+
+ex : Calculate the six quantiles that split up the data into 5 pieces
+(quintiles) of the sleep_total column of msleep dataset.
+
+```{r}
+quantile(msleep$sleep_total, probs = c(0,0.2,0.4,0.6,0.8,1))
+```
+
+```{r}
+quantile(msleep$sleep_total, probs = seq(0,1,0.2))
+```
+
+Calculate the eleven quantiles of sleep_total that split up the data
+into ten pieces (deciles).
+
+```{r}
+quantile(msleep$sleep_total, probs = seq(0,1,0.1))
+```
+
+## Interquartile range (IQR) -
+
+The interquartile range, or IQR, is another measure of spread. It's the
+distance between the 25th and 75th percentile, which is also the height
+of the box in a boxplot (lower line in a box plot is Q1, middle is Q2
+and upper is Q3)
+
+```{r}
+quantile(msleep$sleep_total, 0.75) - quantile(msleep$sleep_total, 0.25) #Q3-Q1
+```
+
+Outliers - Outliers are data points that are substantially different
+from the others. But how do we know what a substantial difference is? A
+rule that's often used is that any data \< Q1 - 1.5 \* IQR \#
+LOWER_THRESHOLD or data \> Q3 + 1.5 \* IQR \# UPPER_THRESHOLD
+
+## Finding outliers -
+
+step 1. we'll start by calculating the IQR of the mammals' body weights.
+step 2.We can then calculate the lower and upper thresholds following
+the formulas from the previous slide. step 3. We can now filter the data
+frame to find mammals whose body weight is above or below the
+thresholds.
+
+```{r}
+IQR <- quantile(msleep$bodywt, 0.75) - quantile(msleep$bodywt, 0.25)
+IQR
+```
+
+```{r}
+lower_threshold <- quantile(msleep$bodywt, 0.25) - 1.5 *IQR
+lower_threshold
+upper_threshold <- quantile(msleep$bodywt, 0.75) + 1.5 *IQR
+upper_threshold
+```
+
+```{r}
+msleep %>% 
+  filter(bodywt < lower_threshold | bodywt > upper_threshold ) %>% 
+  select(name, vore, sleep_total, bodywt)
+```
+
+We can see that there are eleven body weight outliers in this dataset,
+including the cow and the Asian elephant.
+
+# EXERCISE
+
+## question 1
+
+Calculate the variance and standard deviation of co2_emission for each
+food_category by grouping by and summarizing variance as var_co2 and
+standard deviation as sd_co2. Create a histogram of co2_emission for
+each food_category using facet_wrap().
+
+```{r}
+library(readr)
+food_consumption <- read.csv("food_consumption.csv")
+head(food_consumption,10)
+```
+
+```{r}
+food_consumption %>% 
+  group_by(food_category) %>% 
+  summarize(var = var(co2_emission), sd = sd(co2_emission)) 
+```
+
+```{r}
+ggplot(data = food_consumption, aes(x = co2_emission)) +
+  geom_histogram() +
+  facet_wrap(~ food_category)
+```
+
+Superb spread measurement! Beef has the biggest amount of variation in
+its CO2 emissions, while eggs, nuts, and soybeans have relatively small
+amounts of variation.
+
+## question 2
+
+![](images/quartiles.png)
+
+############################ 
+
+-   Calculate the total `co2_emission` per country by grouping by
+    country and taking the sum of `co2_emission`. Call the sum
+    `total_emission` and store the resulting data frame as
+    `emissions_by_country`.
+
+-   Compute the first and third quartiles of `total_emission` and store
+    these as `q1` and `q3`.
+
+-   Calculate the interquartile range of `total_emission` and store it
+    as `iqr`.
+
+-   Calculate the lower and upper cutoffs for outliers of
+    `total_emission`, and store these as `lower` and `upper`
+
+-   Use `filter()` to get countries with a `total_emission` greater than
+    the `upper` cutoff **or** a `total_emission` less than the `lower`
+    cutoff.
+
+```{r}
+head(food_consumption)
+```
+
+```{r}
+emissions_by_country <- food_consumption %>% 
+  group_by(country) %>% 
+  summarize(total_emission = sum(co2_emission))
+emissions_by_country
+```
+
+```{r}
+q1 <- quantile(emissions_by_country$total_emission, 0.25)
+q1
+q3 <- quantile(emissions_by_country$total_emission, 0.75)
+q3
+```
+
+```{r}
+iqr <- q3 - q1
+iqr
+```
+
+```{r}
+lower <- q1 - 1.5 * iqr #Q1 - 1.5 * IQR
+lower
+upper <- q3 + 1.5 * iqr #Q3 - 1.5 * IQR
+upper
+```
+
+```{r}
+emissions_by_country %>% 
+  filter(total_emission < lower | total_emission > upper)
+```
+
+Outstanding outlier detection! It looks like Argentina has a
+substantially higher amount of CO2 emissions per person than other
+countries in the world. Above row is an outlier.
