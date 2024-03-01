@@ -1,3 +1,4 @@
 # Statistical-Foundation-using-R_Datacamp
-mean,median,mode
-var,sd,quartiles,boxplot to show quartiles, quantiles, iqr, outliers, finding outliers (rule)
+  - MEASURE OF CENTER -> mean,median,mode
+  - MEASURE OF SPREAD -> var,sd
+  - Quartiles,boxplot to show quartiles, quantiles, iqr, outliers, finding outliers (rule)
